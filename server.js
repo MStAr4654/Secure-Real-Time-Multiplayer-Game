@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const expect = require('chai');
-const socketio = require('socket.io');
+const socket = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
 
@@ -11,14 +11,7 @@ const runner = require('./test-runner.js');
 
 const app = express();
 
-app.use(helmet({
-    contentSecurityPolicy: false,
-  }));
-
-// Set correct headers manually for FCC
-app.use(helmet.noSniff());
-app.use(helmet.xssFilter());
-app.use(helmet.hidePoweredBy({ setTo: 'PHP 7.4.3' }));
+// ✅ Set cache-control headers for all responses
 app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
@@ -27,56 +20,44 @@ app.use((req, res, next) => {
   next();
 });
 
-/*
-app.use((req, res, next) => {
-  res.setHeader('Cache-Control', 'no-store');
-  next();
-});
-*/ 
-
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-  next();
-});
-
-
-
-app.use('/public', express.static(process.cwd() + '/public'));
-app.use('/assets', express.static(process.cwd() + '/assets'));
+// ✅ Helmet setup per FCC requirements
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  })
+);
+app.use(helmet.noSniff());
+app.use(helmet.xssFilter());
+app.use(helmet.hidePoweredBy({ setTo: 'PHP 7.4.3' }));
 
 app.use('/public', express.static(process.cwd() + '/public', {
   setHeaders: (res) => {
-    res.set('Cache-Control', 'no-store');
+    res.setHeader('Cache-Control', 'no-store');
   }
 }));
-
 app.use('/assets', express.static(process.cwd() + '/assets', {
   setHeaders: (res) => {
-    res.set('Cache-Control', 'no-store');
+    res.setHeader('Cache-Control', 'no-store');
   }
 }));
-
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Allow cross-origin requests for FCC test tool
+app.use(cors({ origin: '*' }));
 
-//For FCC testing purposes and enables user to connect from outside the hosting platform
-app.use(cors({origin: '*'})); 
-
-// Index page (static HTML)
+// ✅ Set cache headers here too
 app.route('/')
   .get(function (req, res) {
     res.setHeader('Cache-Control', 'no-store');
     res.sendFile(process.cwd() + '/views/index.html');
-  }); 
+  });
 
-//For FCC testing purposes
 fccTestingRoutes(app);
-    
-// 404 Not Found Middleware
-app.use(function(req, res, next) {
+
+// 404 handler
+app.use(function (req, res, next) {
   res.status(404)
     .type('text')
     .send('Not Found');
@@ -84,24 +65,23 @@ app.use(function(req, res, next) {
 
 const portNum = process.env.PORT || 3000;
 
-// Set up server and tests
 const server = app.listen(portNum, () => {
   console.log(`Listening on port ${portNum}`);
-  if (process.env.NODE_ENV==='test') {
+  if (process.env.NODE_ENV === 'test') {
     console.log('Running Tests...');
-    setTimeout(function () {
+    setTimeout(() => {
       try {
         runner.run();
-      } catch (error) {
+      } catch (err) {
         console.log('Tests are not valid:');
-        console.error(error);
+        console.error(err);
       }
     }, 1500);
   }
 });
-const io = socketio(server);
 
-module.exports = app; // For testing
+module.exports = app;
+
 
 const players = {};
 let collectible = {
