@@ -11,20 +11,28 @@ const runner = require('./test-runner.js');
 
 const app = express();
 
-app.use(
-  helmet({
+app.use(helmet({
     contentSecurityPolicy: false,
-  })
-);
+  }));
 
 // Set correct headers manually for FCC
 app.use(helmet.noSniff());
 app.use(helmet.xssFilter());
 app.use(helmet.hidePoweredBy({ setTo: 'PHP 7.4.3' }));
 app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+});
+
+/*
+app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
+*/ 
 
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -33,11 +41,26 @@ app.use((req, res, next) => {
 });
 
 
+
 app.use('/public', express.static(process.cwd() + '/public'));
 app.use('/assets', express.static(process.cwd() + '/assets'));
 
+app.use('/public', express.static(process.cwd() + '/public', {
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-store');
+  }
+}));
+
+app.use('/assets', express.static(process.cwd() + '/assets', {
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-store');
+  }
+}));
+
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
 
 //For FCC testing purposes and enables user to connect from outside the hosting platform
 app.use(cors({origin: '*'})); 
@@ -45,6 +68,7 @@ app.use(cors({origin: '*'}));
 // Index page (static HTML)
 app.route('/')
   .get(function (req, res) {
+    res.setHeader('Cache-Control', 'no-store');
     res.sendFile(process.cwd() + '/views/index.html');
   }); 
 
