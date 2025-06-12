@@ -5,7 +5,6 @@ const expect = require('chai');
 const socket = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
-const io = require('socket.io')(server);
 
 const fccTestingRoutes = require('./routes/fcctesting.js');
 const runner = require('./test-runner.js');
@@ -84,6 +83,7 @@ const server = app.listen(portNum, () => {
 module.exports = app;
 
 
+const io = require('socket.io')(server);
 const players = {};
 let collectible = {
   x: Math.floor(Math.random() * 500),
