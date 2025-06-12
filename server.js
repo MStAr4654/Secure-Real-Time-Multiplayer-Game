@@ -5,7 +5,7 @@ const expect = require('chai');
 const socket = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
-const io = require('io');
+const io = require('socket.io')(server);
 
 const fccTestingRoutes = require('./routes/fcctesting.js');
 const runner = require('./test-runner.js');
@@ -156,3 +156,70 @@ io.on('connection', socket => {
     io.emit('player-disconnected', socket.id);
   });
 });
+
+/*
+
+
+// Your Socket.io logic
+io.on('connection', socket => {
+  console.log('Player connected:', socket.id);
+
+  // Initialize player
+  players[socket.id] = {
+    x: Math.floor(Math.random() * 500),
+    y: Math.floor(Math.random() * 500),
+    score: 0
+  };
+
+  // Send initial game state
+  socket.emit('init', {
+    id: socket.id,
+    players,
+    collectible
+  });
+
+  // Notify others
+  socket.broadcast.emit('new-player', {
+    id: socket.id,
+    player: players[socket.id]
+  });
+
+  // Handle player move
+  socket.on('move', ({ x, y }) => {
+    if (players[socket.id]) {
+      players[socket.id].x = x;
+      players[socket.id].y = y;
+
+      // Check collectible collision
+      const dx = players[socket.id].x - collectible.x;
+      const dy = players[socket.id].y - collectible.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 20) {
+        players[socket.id].score += 1;
+        collectible = {
+          x: Math.floor(Math.random() * 500),
+          y: Math.floor(Math.random() * 500)
+        };
+        io.emit('collected', {
+          id: socket.id,
+          collectible,
+          score: players[socket.id].score
+        });
+      }
+
+      socket.broadcast.emit('player-moved', {
+        id: socket.id,
+        x,
+        y
+      });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Player disconnected:', socket.id);
+    delete players[socket.id];
+    socket.broadcast.emit('player-disconnected', socket.id);
+  });
+});
+
+*/
